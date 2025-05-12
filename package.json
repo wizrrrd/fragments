@@ -11,5 +11,8 @@
     "url": "git+https://github.com/wizrrrd/fragments.git"
   },
   "author": "Aditi Sharma",
-  "license": "UNLICENSED"
+  "license": "UNLICENSED",
+  "devDependencies": {
+    "prettier": "3.5.3"
+  }
 }
