@@ -59,6 +59,15 @@ app.use(compression());
 // modifications to src/app.js
 
 // Remove `app.get('/', (req, res) => {...});` and replace with:
+// Health check route that shows version and author
+app.get('/health', (req, res) => {
+  res.status(200).json({
+    status: 'ok',
+    author,
+    version,
+  });
+});
+
 
 // Define our routes
 app.use('/', require('./routes'));
