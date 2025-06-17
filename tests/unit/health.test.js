@@ -1,6 +1,7 @@
 // tests/unit/health.test.js
 
-require('dotenv').config(); // Load .env before anything else
+//require('dotenv').config(); // Load .env before anything else
+//require('dotenv').config({ path: './.env.jest' });
 
 
 

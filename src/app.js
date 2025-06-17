@@ -5,9 +5,6 @@ const cors = require('cors');
 const helmet = require('helmet');
 const compression = require('compression');
 
-
-
-
 // author and version from our package.json file
 // TODO: make sure you have updated your name in the `author` section
 const { author, version } = require('../package.json');
@@ -43,12 +40,10 @@ app.use(helmet());
 // Use CORS middleware so we can make requests across origins
 const corsOptions = {
   origin: 'http://localhost:1234', // allow frontend to access
-  credentials: true,               // allow sending auth headers
+  credentials: true, // allow sending auth headers
 };
 
 app.use(cors(corsOptions));
-
-
 
 // Use gzip/deflate compression middleware
 app.use(compression());
@@ -68,10 +63,8 @@ app.get('/health', (req, res) => {
   });
 });
 
-
 // Define our routes
 app.use('/', require('./routes'));
-
 
 // Add 404 middleware to handle any requests for resources that can't be found
 app.use((req, res) => {
@@ -94,7 +87,7 @@ app.use((err, req, res, next) => {
 
   // If this is a server error, log something so we can see what's going on.
   if (status > 499) {
-    logger.error({ err }, `Error processing request`);
+    logger.error({ err }, 'Error processing request');
   }
 
   res.status(status).json({

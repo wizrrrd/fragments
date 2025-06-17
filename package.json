@@ -4,7 +4,7 @@
   "version": "0.0.1",
   "description": "Fragments back-end API",
   "scripts": {
-    "test": "jest -c jest.config.js --runInBand --",
+   "test": "cross-env NODE_ENV=test jest -c jest.config.js --runInBand",
     "test:watch": "jest -c jest.config.js --runInBand --watch --",
     "coverage": "jest -c jest.config.js --runInBand --coverage",
     "lint": "eslint \"./src/**/*.js\" \"tests/**/*.js\"",
