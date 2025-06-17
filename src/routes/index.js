@@ -12,7 +12,7 @@ const router = express.Router();
 // modifications to src/routes/index.js
 
 // Our authentication middleware
-const { authenticate } = require('../auth/cognito');
+const { authenticate } = require('../auth');
 
 /**
  * Expose all of our API routes on /v1/* to include an API version.
