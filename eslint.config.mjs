@@ -24,5 +24,5 @@ export default defineConfig([
     languageOptions: { sourceType: "commonjs" }, // 👈 from lab config
   },
   // 👇 Also include the full @eslint/js recommended flat config (from lab code)
-  pluginJs.configs.recommended,
+  js.configs.recommended,
 ]);
