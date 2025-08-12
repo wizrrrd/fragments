@@ -1,4 +1,6 @@
 // src/server.js
+//change back to index.js for lab2 package json start command
+
 
 // We want to gracefully shutdown our server
 const stoppable = require('stoppable');
