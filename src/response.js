@@ -26,7 +26,7 @@ function createSuccessResponse(data={}) {
  *   }
  * }
  */
-function createErrorResponse(code=400, message="Invalid request!") {
+function createErrorResponse(code=400, message="Invalid") {
   return {
     status: 'error',
     error: { code, message },
