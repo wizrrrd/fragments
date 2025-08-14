@@ -1,4 +1,5 @@
-// /Users/aditisharma/Downloads/CCP/fragments/tests/unit/memory-db.test.js
+// tests/unit/memory-db.test.js
+
 // Fix this path to point to your project's `memory-db.js` source file
 const MemoryDB = require('../../src/model/data/memory/memory-db');
 
@@ -44,7 +45,7 @@ describe('memory-db', () => {
     expect(Array.isArray(results)).toBe(true);
     expect(results).toEqual([{ value: 1 }, { value: 2 }, { value: 3 }]);
   });
-  
+
   test('query() returns empty array', async () => {
     await db.put('b', 'a', { value: 1 });
     await db.put('b', 'b', { value: 2 });
@@ -62,30 +63,34 @@ describe('memory-db', () => {
     expect(await db.get('a', 'a')).toBe(undefined);
   });
 
-  test('del() throws if primaryKey and secondaryKey not in db', () => {
-    expect(() => db.del('a', 'a')).rejects.toThrow();
+  test('del() throws if primaryKey and secondaryKey not in db', async () => {
+    await expect(db.del('a', 'a')).rejects.toThrow();
   });
 
-  test('get() expects string keys', () => {
-    expect(async () => await db.get()).rejects.toThrow();
-    expect(async () => await db.get(1)).rejects.toThrow();
-    expect(async () => await db.get(1, 1)).rejects.toThrow();
-  });
+  // get() expects string keys
+test('get() expects string keys', () => {
+  expect(() => db.get()).toThrow();
+  expect(() => db.get(1)).toThrow();
+  expect(() => db.get(1, 1)).toThrow();
+});
 
-  test('put() expects string keys', () => {
-    expect(async () => await db.put()).rejects.toThrow();
-    expect(async () => await db.put(1)).rejects.toThrow();
-    expect(async () => await db.put(1, 1)).rejects.toThrow();
-  });
+// put() expects string keys
+test('put() expects string keys', () => {
+  expect(() => db.put()).toThrow();
+  expect(() => db.put(1)).toThrow();
+  expect(() => db.put(1, 1)).toThrow();
+});
 
-  test('query() expects string key', () => {
-    expect(async () => await db.query()).rejects.toThrow();
-    expect(async () => await db.query(1)).rejects.toThrow();
-  });
+// query() expects string key
+test('query() expects string key', () => {
+  expect(() => db.query()).toThrow();
+  expect(() => db.query(1)).toThrow();
+});
 
-  test('del() expects string keys', () => {
-    expect(async () => await db.del()).rejects.toThrow();
-    expect(async () => await db.del(1)).rejects.toThrow();
-    expect(async () => await db.del(1, 1)).rejects.toThrow();
+
+  test('del() expects string keys', async () => {
+    await expect(db.del()).rejects.toThrow();
+    await expect(db.del(1)).rejects.toThrow();
+    await expect(db.del(1, 1)).rejects.toThrow();
   });
 });
