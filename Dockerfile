@@ -1,39 +1,48 @@
-#Dockerfile
-#Use node version
-FROM node:20.19.4
+# syntax=docker/dockerfile:1
 
-LABEL maintainer="Aditi Sharma <aditi21604@gmail.com>"
-LABEL description="Fragments node.js microservice"
+########## Stage 1: deps (install production dependencies only)
+FROM node:20.19.4 AS deps
 
-# We default to use port 8080 in our service
-ENV PORT=8080
-
-# Reduce npm spam when installing within Docker
-# https://docs.npmjs.com/cli/v8/using-npm/config#loglevel
-ENV NPM_CONFIG_LOGLEVEL=warn
-
-# Disable colour when run inside Docker
-# https://docs.npmjs.com/cli/v8/using-npm/config#color
-ENV NPM_CONFIG_COLOR=false
-
-# Use /app as our working directory
 WORKDIR /app
 
-# Option 1: explicit path - Copy the package.json and package-lock.json
-# files into /app. NOTE: the trailing `/` on `/app/`, which tells Docker
-# that `app` is a directory and not a file.
-COPY package*.json /app/
+# Quieter npm output and no colors in non-TTY builds
+ENV NPM_CONFIG_LOGLEVEL=warn \
+    NPM_CONFIG_COLOR=false
 
-# Install node dependencies defined in package-lock.json
-RUN npm install
+# Only copy manifests so this layer is cached unless deps change
+COPY package*.json ./
 
-# Copy src/
+# Install reproducibly; omit dev deps for a lean runtime
+RUN npm ci --omit=dev
+
+
+########## Stage 2: runtime
+FROM node:20.19.4-alpine AS runtime
+
+LABEL maintainer="Aditi Sharma <aditi21604@gmail.com>" \
+      description="Fragments node.js microservice"
+
+# Service port (remember: EXPOSE is just documentation)
+ENV PORT=8080 \
+    NPM_CONFIG_LOGLEVEL=warn \
+    NPM_CONFIG_COLOR=false
+
+WORKDIR /app
+
+# Bring in production node_modules from the deps stage
+COPY --from=deps /app/node_modules ./node_modules
+
+# Your app code + package metadata (so npm start works)
+COPY package*.json ./
 COPY ./src ./src
 
-# Copy our HTPASSWD file
-COPY ./tests/.htpasswd ./tests/.htpasswd
-# Start the container by running our server
-CMD npm start
+# If you need Basic Auth inside the container for testing,
+# either mount your .htpasswd file at runtime:
+#   -v "$(pwd)/tests/.htpasswd:/app/tests/.htpasswd:ro"
+# or uncomment the next line to bake it in (not recommended for prod):
+# COPY ./tests/.htpasswd ./tests/.htpasswd
 
-# We run our service on port 8080
 EXPOSE 8080
+
+# JSON form prevents signal handling issues
+CMD ["npm", "start"]
