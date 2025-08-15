@@ -1,19 +1,23 @@
-//src/routes/api/post.js
+// src/routes/api/post.js
 const contentType = require('content-type');
 const { createSuccessResponse, createErrorResponse } = require('../../response');
 const { Fragment } = require('../../model/fragment');
 const logger = require('../../logger');
 
 module.exports = async (req, res) => {
-  const isBuffer = Buffer.isBuffer(req.body);
   const typeHeader = req.headers['content-type'];
 
-  // Resolve ownerId from auth (it might be an object or a string depending on the auth layer)
-  const ownerId =
-    req.user && (typeof req.user === 'string' ? req.user : req.user.id);
+  // Body should already be a Buffer thanks to rawBody(), but be defensive
+  let data = Buffer.isBuffer(req.body)
+    ? req.body
+    : typeof req.body === 'string'
+      ? Buffer.from(req.body, 'utf8')
+      : null;
 
+  // Ensure we have an authenticated user (authorize middleware should have set req.user.id)
+  const ownerId = req.user && req.user.id;
   if (!ownerId) {
-    // Auth should already protect /v1, but fail cleanly if somehow missing
+    logger.warn('POST /v1/fragments missing req.user.id');
     return res.status(401).json(createErrorResponse(401, 'unauthorized'));
   }
 
@@ -23,41 +27,36 @@ module.exports = async (req, res) => {
     return res.status(415).json(createErrorResponse(415, 'unsupported type'));
   }
 
-  // Parse and validate the content type
-  let parsed;
+  // Validate content type
   try {
-    parsed = contentType.parse(typeHeader);
+    const { type } = contentType.parse(typeHeader);
+    if (!Fragment.isSupportedType(type)) {
+      logger.warn({ type }, 'unsupported Content-Type');
+      return res.status(415).json(createErrorResponse(415, 'unsupported type'));
+    }
   } catch (err) {
     logger.warn({ err, typeHeader }, 'invalid Content-Type');
     return res.status(415).json(createErrorResponse(415, 'unsupported type'));
   }
-  if (!Fragment.isSupportedType(parsed.type)) {
-    logger.warn({ type: parsed.type }, 'unsupported Content-Type');
-    return res.status(415).json(createErrorResponse(415, 'unsupported type'));
-  }
 
-  // Body must resolve to a Buffer
-  let data;
-  if (isBuffer) {
-    data = req.body;
-  } else if (typeof req.body === 'string') {
-    data = Buffer.from(req.body, 'utf8');
-  } else {
+  // Validate body
+  if (!data) {
+    logger.warn('POST /v1/fragments body not Buffer or string');
     return res.status(415).json(createErrorResponse(415, 'unsupported type'));
   }
 
   try {
     // Create + persist fragment
     const fragment = new Fragment({
-      ownerId,
-      type: typeHeader, // may include charset
-      size: 0,
+      ownerId,           // hashed id
+      type: typeHeader,  // may include charset
+      size: 0,           // will be set by setData()
     });
 
     await fragment.save();
     await fragment.setData(data);
 
-    // Prefer API_URL for Location; fall back to current host
+    // Build Location header. Prefer API_URL; fall back to current host
     const base = process.env.API_URL || `http://${req.headers.host}`;
     const location = `${base}/v1/fragments/${fragment.id}`;
     res.set('Location', location);

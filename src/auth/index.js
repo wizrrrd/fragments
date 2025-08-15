@@ -1,29 +1,35 @@
 // src/auth/index.js
+//
+// Central auth selector. Chooses between Amazon Cognito (bearer) and
+// HTTP Basic Auth based on env. Re-exports both `strategy()` (if the
+// implementation provides it) and the route-level `authenticate()`
+// middleware used by your routes.
 
+const logger = require('../logger');
 
-// Make sure our env isn't configured for both AWS Cognito and HTTP Basic Auth.
-// We can only do one or the other.  If your .env file contains all 3 of these
-// variables, something is wrong.  It should have AWS_COGNITO_POOL_ID and
-// AWS_COGNITO_CLIENT_ID together OR HTPASSWD_FILE on its own.
-if (
-  process.env.AWS_COGNITO_POOL_ID &&
-  process.env.AWS_COGNITO_CLIENT_ID &&
-  process.env.HTPASSWD_FILE
-) {
-  throw new Error(
-    'env contains configuration for both AWS Cognito and HTTP Basic Auth. Only one is allowed.'
-  );
+const hasCognito = !!(process.env.AWS_COGNITO_POOL_ID && process.env.AWS_COGNITO_CLIENT_ID);
+const hasBasic   = !!process.env.HTPASSWD_FILE && process.env.NODE_ENV !== 'production';
+
+// Allow explicit override
+const forced = (process.env.AUTH_STRATEGY || '').toLowerCase();
+const useBearer = forced ? forced === 'bearer' : hasCognito;
+const useBasic  = forced ? forced === 'basic'  : (!hasCognito && hasBasic);
+
+if (useBearer && useBasic) {
+  throw new Error('Auth misconfigured: both Cognito(bearer) and Basic are enabled. Choose one.');
+}
+if (!useBearer && !useBasic) {
+  throw new Error('Auth misconfigured: no authorization configuration found.');
 }
 
-// Prefer Amazon Cognito (production)
-if (process.env.AWS_COGNITO_POOL_ID && process.env.AWS_COGNITO_CLIENT_ID) {
-  module.exports = require('./cognito');
-}
-// Also allow for an .htpasswd file to be used, but not in production
-else if (process.env.HTPASSWD_FILE && process.NODE_ENV !== 'production') {
-  module.exports = require('./basic-auth');
-}
-// In all other cases, we need to stop now and fix our config
-else {
-  throw new Error('missing env vars: no authorization configuration found');
+const impl = useBearer ? require('./cognito') : require('./basic-auth');
+
+logger.info(`Auth: using ${useBearer ? 'Amazon Cognito (bearer tokens)' : 'HTTP Basic Auth'}`);
+
+// Re-export the route middleware
+module.exports.authenticate = impl.authenticate;
+
+// Optionally expose the strategy() so app.js can register with passport when needed
+if (typeof impl.strategy === 'function') {
+  module.exports.strategy = impl.strategy;
 }
