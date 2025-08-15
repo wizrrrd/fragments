@@ -11,7 +11,15 @@ const {
   deleteFragment,
 } = require('./data'); // ensure src/model/data/index.js exists and re-exports './memory'
 
-const SUPPORTED_BASE_TYPES = new Set(['text/plain']);
+// ✅ Support both text/plain and text/markdown (assignment 2)
+const SUPPORTED_BASE_TYPES = new Set(['text/plain', 'text/markdown']);
+
+// Optional: declare which converted formats are allowed (markdown → html)
+const ALLOWED_CONVERSIONS = {
+  'text/markdown': new Set(['text/html']),
+  'text/plain': new Set([]),
+};
+
 const now = () => new Date().toISOString();
 
 class Fragment {
@@ -73,9 +81,31 @@ class Fragment {
     return this.mimeType.startsWith('text/');
   }
 
+  // ✅ Advertise available formats for this fragment instance
   get formats() {
-    if (this.mimeType === 'text/plain') return ['text/plain'];
-    return [];
+    const base = this.mimeType;
+    const extras = ALLOWED_CONVERSIONS[base] ? Array.from(ALLOWED_CONVERSIONS[base]) : [];
+    // Always include the original type itself first
+    return [base, ...extras];
+  }
+
+  // ✅ Static helper (some routes prefer asking “what could this type convert to?”)
+  static getAvailableFormats(type) {
+    const { type: base } = contentType.parse(type);
+    const extras = ALLOWED_CONVERSIONS[base] ? Array.from(ALLOWED_CONVERSIONS[base]) : [];
+    return [base, ...extras];
+  }
+
+  // ✅ Provide a JSON representation (fixes /info route expecting fragment.toJSON())
+  toJSON() {
+    return {
+      id: this.id,
+      ownerId: this.ownerId,
+      created: this.created,
+      updated: this.updated,
+      type: this.type,
+      size: this.size,
+    };
   }
 
   static isSupportedType(value) {
